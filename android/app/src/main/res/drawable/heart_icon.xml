@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dark blue background -->
+    <path
+        android:fillColor="#0a2351"
+        android:pathData="M0,0 L108,0 L108,108 L0,108 z" />
+    <!-- Red heart with smoother curves and better shape -->
+    <path
+        android:fillColor="#ff0000"
+        android:pathData="M54,88 C46,80 38,72 27,61 C16,50 8,38 8,29 C8,16 18,8 30,8 C39,8 48,14 54,24 C60,14 69,8 78,8 C90,8 100,16 100,29 C100,38 92,50 81,61 C70,72 62,80 54,88 Z" />
+    <!-- Add subtle highlight to create a 3D effect -->
+    <path
+        android:fillColor="#ffffff"
+        android:fillAlpha="0.1"
+        android:pathData="M30,16 C23,16 16,21 16,29 C16,35 22,44 32,54 C42,64 50,72 54,76 C54,76 56,70 70,56 C84,42 92,33 92,29 C92,21 85,16 78,16 C71,16 64,22 60,28 C58,30 56,34 54,34 C52,34 50,30 48,28 C44,22 37,16 30,16 Z" />
+</vector> 

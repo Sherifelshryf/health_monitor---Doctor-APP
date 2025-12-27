@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1076203320872",
+    "project_id": "health-monitor-f5498",
+    "storage_bucket": "health-monitor-f5498.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076203320872:android:86655152c867c52af0e71d",
+        "android_client_info": {
+          "package_name": "com.example.blemonitor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk-IECx1KbuUS05TNnu7t_LL5QA1jeFYs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076203320872:android:cb5d95e377a39bb9f0e71d",
+        "android_client_info": {
+          "package_name": "com.example.bluetoothle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk-IECx1KbuUS05TNnu7t_LL5QA1jeFYs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
