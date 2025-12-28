@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,8 +56,47 @@ class DoctorApp extends StatelessWidget {
   }
 }
 
-class WelcomePage extends StatelessWidget {
+class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
+
+  @override
+  State<WelcomePage> createState() => _WelcomePageState();
+}
+
+class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    );
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _fadeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,28 +117,38 @@ class WelcomePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.monitor_heart,
-                size: 100,
-                color: colorScheme.primary,
+              ScaleTransition(
+                scale: _pulseAnimation,
+                child: Icon(
+                  Icons.monitor_heart,
+                  size: 100,
+                  color: colorScheme.primary,
+                ),
               ),
               const SizedBox(height: 24),
-              Text(
-                "Doctor's Monitor",
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  children: [
+                    Text(
+                      "Doctor's Monitor",
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
-              ),
-              const SizedBox(height: 48),
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const MenuPage()),
-                  );
-                },
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Start'),
+                    const SizedBox(height: 48),
+                    FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const MenuPage()),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_forward),
+                      label: const Text('Start'),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -388,6 +438,12 @@ class _HealthMonitorPageForDoctorState extends State<HealthMonitorPageForDoctor>
                         icon: Icons.access_time,
                         color: Colors.purple,
                       ),
+                      const SizedBox(height: 24),
+                      _buildHeartRateChart(),
+                      const SizedBox(height: 12),
+                      _buildTemperatureChart(),
+                      const SizedBox(height: 12),
+                      _buildSpO2Chart(),
                     ],
                   ),
                 ),
@@ -396,6 +452,136 @@ class _HealthMonitorPageForDoctorState extends State<HealthMonitorPageForDoctor>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHeartRateChart() {
+    return _buildHistoryChart(
+      title: 'Heart Rate History (BPM)',
+      fieldName: 'heartRate',
+      color: Colors.red,
+      minY: 0,
+      maxY: 180,
+      interval: 40,
+    );
+  }
+
+  Widget _buildTemperatureChart() {
+    return _buildHistoryChart(
+      title: 'Temperature History (°C)',
+      fieldName: 'temperature',
+      color: Colors.orange,
+      minY: 30,
+      maxY: 45,
+      interval: 5,
+    );
+  }
+
+  Widget _buildSpO2Chart() {
+    return _buildHistoryChart(
+      title: 'SpO₂ History (%)',
+      fieldName: 'spO2',
+      color: Colors.blue,
+      minY: 70,
+      maxY: 100,
+      interval: 10,
+    );
+  }
+
+  Widget _buildHistoryChart({
+    required String title,
+    required String fieldName,
+    required Color color,
+    required double minY,
+    required double maxY,
+    required double interval,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('patients')
+                    .doc(widget.patientId)
+                    .collection('readings')
+                    .orderBy('timestamp', descending: true)
+                    .limit(20)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No history available'));
+                  }
+
+                  final docs = snapshot.data!.docs.reversed.toList();
+                  List<FlSpot> spots = [];
+                  for (int i = 0; i < docs.length; i++) {
+                    final data = docs[i].data() as Map<String, dynamic>;
+                    final rawValue = data[fieldName];
+                    double value = 0;
+                    if (rawValue is num) {
+                      value = rawValue.toDouble();
+                    } else if (rawValue is String) {
+                      value = double.tryParse(rawValue) ?? 0;
+                    }
+                    spots.add(FlSpot(i.toDouble(), value));
+                  }
+
+                  return LineChart(
+                    LineChartData(
+                      minY: minY,
+                      maxY: maxY,
+                      gridData: const FlGridData(show: false),
+                      titlesData: FlTitlesData(
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 40,
+                            interval: interval,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                  fieldName == 'temperature' 
+                                      ? value.toStringAsFixed(1) 
+                                      : value.toInt().toString(),
+                                  style: const TextStyle(fontSize: 10));
+                            },
+                          ),
+                        ),
+                        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      ),
+                      borderData: FlBorderData(show: true, border: Border.all(color: Colors.grey.shade300)),
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: spots,
+                          isCurved: true,
+                          color: color,
+                          barWidth: 3,
+                          dotData: const FlDotData(show: true),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            color: color.withOpacity(0.1),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
